@@ -1,0 +1,24 @@
+[
+  {
+    "id": "fallback-flight-001",
+    "name": "FalconSat",
+    "flight_number": 1,
+    "date_utc": "2006-03-24T22:30:00.000Z",
+    "success": false,
+    "rocket": "falcon1",
+    "launchpad": "kwajalein",
+    "payloads": ["payload-001"],
+    "details": "Fallback local para demonstracao caso a API da SpaceX esteja indisponivel."
+  },
+  {
+    "id": "fallback-flight-002",
+    "name": "CRS Demo Flight",
+    "flight_number": 7,
+    "date_utc": "2010-12-08T15:43:00.000Z",
+    "success": true,
+    "rocket": "falcon9",
+    "launchpad": "ccafs-sl40",
+    "payloads": ["payload-002", "payload-003"],
+    "details": "Missao mockada usada como fallback do pipeline Hermes."
+  }
+]
