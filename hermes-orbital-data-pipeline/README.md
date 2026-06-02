@@ -42,77 +42,167 @@ run_analytical_queries
 
 ## Configuracao
 
-Copie `.env.example` para `.env` se quiser alterar as variaveis locais.
+O projeto ja possui um arquivo local `.env` para execucao com Oracle. Esse arquivo esta no `.gitignore`, entao nao entra no repositiorio.
 
-Variaveis principais:
+Arquivo local usado agora:
 
 ```text
-HERMES_DB_TARGET=sqlite
-ORACLE_USER=
-ORACLE_PASSWORD=
+HERMES_DB_TARGET=oracle
+ORACLE_USER=rm551549
+ORACLE_PASSWORD=090705
 ORACLE_HOST=oracle.fiap.com.br
 ORACLE_PORT=1521
 ORACLE_SID=ORCL
 ```
 
-Use `HERMES_DB_TARGET=oracle` apenas quando as credenciais Oracle estiverem disponiveis. Caso a conexao Oracle falhe, o loader usa SQLite como fallback.
+Se quiser testar sem Oracle, troque apenas:
 
-## Rodando Manualmente
+```text
+HERMES_DB_TARGET=sqlite
+```
 
-No diretorio do projeto:
+## Como Rodar: passo a passo
 
-```bash
-cd hermes-orbital-data-pipeline
+### Opcao 1: rodar os scripts manualmente
+
+1. Abra o PowerShell na pasta do projeto:
+
+```powershell
+cd C:\Users\hyeon\Desktop\GS-DATABASE\hermes-orbital-data-pipeline
+```
+
+2. Verifique se o Python funciona:
+
+```powershell
+python --version
+```
+
+Se aparecer erro de permissao no `python`, corrija isso primeiro. Neste computador isso ainda precisa ser resolvido.
+
+3. Crie e ative um ambiente virtual:
+
+```powershell
 python -m venv .venv
-.venv\Scripts\activate
+.venv\Scripts\Activate.ps1
+```
+
+4. Instale as dependencias:
+
+```powershell
 pip install -r requirements.txt
-python scripts/extract_spacex.py
-python scripts/extract_iss.py
-python scripts/generate_mock_telemetry.py
-python scripts/transform_data.py
-python scripts/load_database.py
-python scripts/run_analytical_queries.py
 ```
 
-O banco SQLite sera criado em:
+5. Execute a extracao:
 
-```text
-hermes_orbital.db
+```powershell
+python scripts\extract_spacex.py
+python scripts\extract_iss.py
+python scripts\generate_mock_telemetry.py
 ```
 
-Os resultados das consultas ficam em:
+6. Execute a transformacao:
+
+```powershell
+python scripts\transform_data.py
+```
+
+7. Carregue no banco:
+
+```powershell
+python scripts\load_database.py
+```
+
+8. Rode as consultas analiticas:
+
+```powershell
+python scripts\run_analytical_queries.py
+```
+
+9. Verifique as saidas:
 
 ```text
+data/raw/
+data/processed/
 data/processed/query_results/
 ```
 
-## Rodando com Docker Compose
+Se o Oracle falhar, o projeto deve cair para SQLite automaticamente.
 
-No diretorio do projeto:
+### Opcao 2: rodar pelo Airflow com Docker
 
-```bash
+1. Abra o terminal na pasta do projeto:
+
+```powershell
+cd C:\Users\hyeon\Desktop\GS-DATABASE\hermes-orbital-data-pipeline
+```
+
+2. Suba a inicializacao do Airflow:
+
+```powershell
 docker compose up airflow-init
+```
+
+3. Suba os servicos:
+
+```powershell
 docker compose up
 ```
 
-Acesse o Airflow em:
+4. Abra o Airflow:
 
 ```text
 http://localhost:8080
 ```
 
-Credenciais padrao:
+5. Entre com:
 
 ```text
 usuario: admin
 senha: admin
 ```
 
-Ative e execute a DAG `hermes_orbital_pipeline`.
+6. Ative a DAG `hermes_orbital_pipeline`.
+
+7. Clique em `Trigger DAG`.
+
+8. Acompanhe as tarefas:
+
+```text
+create_directories
+extract_spacex_launches
+extract_iss_position
+generate_mock_telemetry
+transform_spacex_data
+transform_iss_data
+transform_telemetry_data
+load_to_database
+run_analytical_queries
+```
+
+## Ordem recomendada
+
+Para apresentar rapido e com menos risco:
+
+1. Tente primeiro com `HERMES_DB_TARGET=sqlite`.
+2. Depois mude para `HERMES_DB_TARGET=oracle`.
+3. Se Oracle responder, use ele na demonstracao.
+4. Se Oracle falhar, mantenha SQLite como fallback.
 
 ## Banco Oracle
 
-O schema Oracle esta em `sql/01_create_tables_oracle.sql`. A conexao usa `python-oracledb` e variaveis de ambiente, sem senha fixa no codigo.
+O schema Oracle esta em `sql/01_create_tables_oracle.sql`. A conexao usa `oracledb` e variaveis de ambiente.
+
+Se quiser forcar Oracle no terminal atual sem editar arquivo:
+
+```powershell
+$env:HERMES_DB_TARGET="oracle"
+$env:ORACLE_USER="rm551549"
+$env:ORACLE_PASSWORD="090705"
+$env:ORACLE_HOST="oracle.fiap.com.br"
+$env:ORACLE_PORT="1521"
+$env:ORACLE_SID="ORCL"
+python scripts\load_database.py
+```
 
 ## Banco SQLite
 

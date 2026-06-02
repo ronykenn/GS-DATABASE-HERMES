@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
@@ -17,6 +18,28 @@ TABLE_FILES = {
     "HERMES_ORBITAL_OBJECTS": PROCESSED_DIR / "orbital_objects.csv",
     "HERMES_MISSION_ANALYTICS": PROCESSED_DIR / "mission_analytics.csv",
 }
+
+DATE_COLUMNS = {
+    "HERMES_SPACEX_LAUNCHES": ["launch_date_utc", "ingestion_date"],
+    "HERMES_ISS_POSITION": ["collected_at", "ingestion_date"],
+    "HERMES_ORBITAL_OBJECTS": ["observed_at", "ingestion_date"],
+    "HERMES_MISSION_ANALYTICS": ["reference_date", "generated_at"],
+}
+
+
+def _normalize_dataframe(table_name: str, df: pd.DataFrame) -> pd.DataFrame:
+    normalized = df.copy()
+    for column in DATE_COLUMNS.get(table_name, []):
+        if column not in normalized.columns:
+            continue
+        if column == "reference_date":
+            normalized[column] = pd.to_datetime(normalized[column], errors="coerce").dt.date
+        else:
+            normalized[column] = (
+                pd.to_datetime(normalized[column], errors="coerce", utc=True)
+                .dt.tz_localize(None)
+            )
+    return normalized
 
 
 def _connect():
@@ -47,10 +70,22 @@ def _run_schema(cursor) -> None:
 def _insert_dataframe(cursor, table_name: str, df: pd.DataFrame) -> None:
     if df.empty:
         return
+    df = _normalize_dataframe(table_name, df)
     columns = list(df.columns)
     placeholders = ", ".join([f":{index + 1}" for index in range(len(columns))])
     sql = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
-    cursor.executemany(sql, [tuple(None if pd.isna(value) else value for value in row) for row in df.to_numpy()])
+    rows = []
+    for row in df.to_numpy():
+        values = []
+        for value in row:
+            if pd.isna(value):
+                values.append(None)
+            elif isinstance(value, pd.Timestamp):
+                values.append(value.to_pydatetime())
+            else:
+                values.append(value)
+        rows.append(tuple(values))
+    cursor.executemany(sql, rows)
 
 
 def load_oracle() -> None:

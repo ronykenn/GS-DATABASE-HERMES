@@ -11,6 +11,7 @@ from config import MOCK_DIR, PROCESSED_DIR, RAW_DIR, configure_logging, ensure_d
 
 
 LOGGER = configure_logging("transform_data")
+SPACEX_DETAILS_MAX_LENGTH = 900
 
 
 def _require_file(path: Path) -> None:
@@ -66,7 +67,7 @@ def transform_spacex_data(
                 "rocket_id": item.get("rocket") or "",
                 "launchpad_id": item.get("launchpad") or "",
                 "payloads_count": len(item.get("payloads") or []),
-                "details": (item.get("details") or "")[:1000],
+                "details": (item.get("details") or "")[:SPACEX_DETAILS_MAX_LENGTH],
                 "data_source": "SPACEX_API",
                 "ingestion_date": _ingestion_timestamp(),
             }
