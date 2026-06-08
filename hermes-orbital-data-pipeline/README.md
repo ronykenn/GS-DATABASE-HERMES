@@ -12,22 +12,15 @@ Pipeline de dados desenvolvido para a **Global Solution 2026 FIAP** no contexto 
 | Rony Ken Nagai | 551549 |
 | Tomáz Versolato Carballo | 551417 |
 
-## Objetivo do pipeline
+## Objetivo
 
 Automatizar um fluxo completo de engenharia de dados usando **Apache Airflow**:
-
-1. extrair dados espaciais de APIs públicas;
-2. gerar telemetria orbital simulada do Projeto Hermes;
-3. armazenar dados brutos em arquivos locais;
-4. transformar, limpar e padronizar os dados;
-5. carregar os dados em Oracle ou SQLite;
-6. executar consultas analíticas SQL.
-
-Fluxo geral:
 
 ```text
 Fonte de dados -> Extração -> Raw files -> Transformação Pandas -> Banco de dados -> Consultas SQL -> Resultados analíticos
 ```
+
+O pipeline faz extração de dados espaciais, geração de telemetria orbital simulada, tratamento com Pandas, carga em banco de dados e execução de consultas analíticas SQL.
 
 ## Fontes de dados
 
@@ -44,7 +37,7 @@ https://api.spacexdata.com/v4/launches
 http://api.open-notify.org/iss-now.json
 ```
 
-Se uma API falhar, os scripts usam fallback local em `data/mock`, evitando que a apresentação trave.
+Se uma API falhar, os scripts usam fallback local em `data/mock`.
 
 ## Estrutura do projeto
 
@@ -53,20 +46,7 @@ hermes-orbital-data-pipeline/
 ├── dags/
 │   └── hermes_orbital_pipeline_dag.py
 ├── scripts/
-│   ├── config.py
-│   ├── extract_spacex.py
-│   ├── extract_iss.py
-│   ├── generate_mock_telemetry.py
-│   ├── transform_data.py
-│   ├── load_database.py
-│   ├── load_oracle.py
-│   ├── load_sqlite.py
-│   └── run_analytical_queries.py
 ├── sql/
-│   ├── 01_create_tables_oracle.sql
-│   ├── 02_create_tables_sqlite.sql
-│   ├── 03_analytical_queries_oracle.sql
-│   └── 04_analytical_queries_sqlite.sql
 ├── data/
 │   ├── raw/
 │   ├── mock/
@@ -106,7 +86,7 @@ load_to_database
 run_analytical_queries
 ```
 
-Dependências:
+Fluxo:
 
 ```text
 create_directories
@@ -139,23 +119,14 @@ O pipeline realiza:
 9. seleção de colunas relevantes;
 10. criação de `priority_level` e `recommended_action`.
 
-Regras de prioridade:
+Regras:
 
-| collision_risk_score | priority_level |
-|---|---|
-| >= 80 | CRITICAL |
-| >= 60 e < 80 | HIGH |
-| >= 40 e < 60 | MEDIUM |
-| < 40 | LOW |
-
-Regras de ação:
-
-| priority_level | recommended_action |
-|---|---|
-| CRITICAL | IMMEDIATE_DEORBIT |
-| HIGH | SCHEDULE_CAPTURE |
-| MEDIUM | MONITOR |
-| LOW | NO_ACTION |
+| collision_risk_score | priority_level | recommended_action |
+|---|---|---|
+| >= 80 | CRITICAL | IMMEDIATE_DEORBIT |
+| >= 60 e < 80 | HIGH | SCHEDULE_CAPTURE |
+| >= 40 e < 60 | MEDIUM | MONITOR |
+| < 40 | LOW | NO_ACTION |
 
 ## Modelagem das tabelas
 
@@ -181,10 +152,8 @@ Tabelas:
 - Python 3.10 ou superior;
 - Docker Desktop;
 - PowerShell ou terminal equivalente;
-- acesso à internet para APIs externas;
+- internet para APIs externas;
 - acesso ao Oracle FIAP, caso a equipe use Oracle.
-
-O modo mais seguro para teste e apresentação é SQLite local. O Oracle pode ser usado quando a conexão da FIAP estiver funcionando.
 
 ## Configuração inicial
 
@@ -201,7 +170,7 @@ git clone https://github.com/ronykenn/GS-DATABASE-HERMES.git
 cd GS-DATABASE-HERMES\hermes-orbital-data-pipeline
 ```
 
-Criar o `.env` local:
+Criar o arquivo `.env` local:
 
 ```powershell
 copy .env.example .env
@@ -219,13 +188,13 @@ ORACLE_PORT=1521
 ORACLE_SID=ORCL
 ```
 
-Para Oracle, preencher `ORACLE_USER` e `ORACLE_PASSWORD` no arquivo `.env` local e trocar:
+Para configurar o Oracle FIAP, consulte:
 
 ```text
-HERMES_DB_TARGET=oracle
+docs/guia_oracle_fiap.md
 ```
 
-Importante: o arquivo `.env` não deve ser enviado ao GitHub.
+O arquivo `.env` não deve ser enviado ao GitHub.
 
 ## Rodar manualmente sem Airflow
 
@@ -253,86 +222,43 @@ dir data\processed\query_results
 
 Este é o modo principal da entrega.
 
-1. Entrar na pasta:
-
-```powershell
-cd C:\Users\hyeon\Desktop\GS-DATABASE\hermes-orbital-data-pipeline
-```
-
-2. Criar `.env`:
-
 ```powershell
 copy .env.example .env
-```
-
-3. Subir inicialização do Airflow:
-
-```powershell
 docker compose up airflow-init
-```
-
-4. Subir webserver e scheduler:
-
-```powershell
 docker compose up
 ```
 
-5. Acessar:
+Acessar:
 
 ```text
 http://localhost:8080
 ```
 
-Login local padrão criado pelo Docker Compose:
+Login local do Airflow:
 
 ```text
 usuário: admin
 senha: admin
 ```
 
-6. No Airflow:
+No Airflow:
 
-- procurar a DAG `hermes_orbital_pipeline`;
-- ativar a DAG;
-- clicar em `Trigger DAG`;
-- acompanhar pela `Grid View`, `Graph View` e logs.
+1. procurar a DAG `hermes_orbital_pipeline`;
+2. ativar a DAG;
+3. clicar em `Trigger DAG`;
+4. acompanhar pela `Grid View`, `Graph View` e logs.
 
-7. Ao finalizar, parar os containers:
+Parar os containers:
 
 ```powershell
 docker compose down
 ```
 
-Para apagar o volume do Postgres do Airflow e reiniciar do zero:
+Reiniciar do zero, apagando volume do Postgres do Airflow:
 
 ```powershell
 docker compose down -v
 ```
-
-## Rodar com Oracle FIAP
-
-Banco da disciplina:
-
-```text
-Host: oracle.fiap.com.br
-Porta: 1521
-SID: ORCL
-```
-
-No `.env` local:
-
-```text
-HERMES_DB_TARGET=oracle
-ORACLE_USER=seu_usuario_fiap
-ORACLE_PASSWORD=sua_senha_fiap
-ORACLE_HOST=oracle.fiap.com.br
-ORACLE_PORT=1521
-ORACLE_SID=ORCL
-```
-
-Depois rode pelo Airflow ou manualmente.
-
-Se o Oracle falhar por rede, acesso, credenciais ou instabilidade, o script `load_database.py` usa SQLite como fallback.
 
 ## Consultas analíticas SQL
 
@@ -357,24 +283,24 @@ Consultas incluídas:
 
 Use estes prints no PDF final:
 
-1. **Estrutura do projeto no VS Code** mostrando `dags`, `scripts`, `sql`, `data`, `docs`, `docker-compose.yml` e `README.md`.
-2. **Arquivo da DAG** aberto em `dags/hermes_orbital_pipeline_dag.py`, mostrando nome da DAG e tarefas.
-3. **Terminal com Docker** após executar `docker compose up`, mostrando webserver e scheduler rodando.
-4. **Tela inicial do Airflow** em `http://localhost:8080`, mostrando a DAG `hermes_orbital_pipeline`.
-5. **DAG ativada** no Airflow com o toggle ligado.
-6. **Graph View da DAG**, mostrando o fluxo completo das tarefas.
-7. **Grid View ou Graph View com sucesso**, mostrando todas as tarefas verdes após `Trigger DAG`.
-8. **Logs de `extract_spacex_launches` ou `extract_iss_position`**, provando extração externa.
-9. **Logs de `generate_mock_telemetry`**, provando geração dos dados simulados Hermes.
-10. **Logs de `transform_telemetry_data`**, provando tratamento dos dados.
-11. **Logs de `load_to_database`**, provando carga em Oracle ou SQLite.
-12. **Logs de `run_analytical_queries`**, provando execução das consultas.
-13. **Pasta `data/raw`**, mostrando arquivos brutos gerados.
-14. **Pasta `data/processed`**, mostrando arquivos tratados.
-15. **Pasta `data/processed/query_results`**, mostrando resultados das consultas.
-16. **Banco populado**, com contagem das tabelas em Oracle, SQLite, DBeaver, SQL Developer ou DB Browser.
-17. **Consulta analítica de agrupamento**, por exemplo objetos por tipo.
-18. **Ranking de risco orbital**, mostrando os objetos com maior `collision_risk_score`.
+1. estrutura do projeto no VS Code;
+2. arquivo `dags/hermes_orbital_pipeline_dag.py`;
+3. terminal com `docker compose up` rodando;
+4. tela inicial do Airflow com a DAG `hermes_orbital_pipeline`;
+5. DAG ativada;
+6. `Graph View` da DAG;
+7. `Grid View` ou `Graph View` com todas as tarefas verdes;
+8. logs de `extract_spacex_launches` ou `extract_iss_position`;
+9. logs de `generate_mock_telemetry`;
+10. logs de `transform_telemetry_data`;
+11. logs de `load_to_database`;
+12. logs de `run_analytical_queries`;
+13. pasta `data/raw`;
+14. pasta `data/processed`;
+15. pasta `data/processed/query_results`;
+16. banco populado no Oracle, SQLite, DBeaver, SQL Developer ou DB Browser;
+17. consulta analítica de agrupamento;
+18. ranking de risco orbital.
 
 Consultas boas para prints:
 
@@ -460,14 +386,6 @@ data/processed/
 
 ### A DAG não aparece
 
-Verifique se o arquivo está em:
-
-```text
-dags/hermes_orbital_pipeline_dag.py
-```
-
-Reinicie:
-
 ```powershell
 docker compose down
 docker compose up
@@ -482,7 +400,7 @@ ports:
   - "8081:8080"
 ```
 
-Acesse:
+Depois acesse:
 
 ```text
 http://localhost:8081
@@ -490,7 +408,7 @@ http://localhost:8081
 
 ### Erro no Oracle
 
-Verifique usuário, senha, rede e acesso ao servidor FIAP. Para não travar a apresentação, use:
+Verifique o `.env`, o usuário Oracle FIAP, a senha acadêmica, a rede e o acesso ao host `oracle.fiap.com.br`. Para não travar a apresentação, use:
 
 ```text
 HERMES_DB_TARGET=sqlite
