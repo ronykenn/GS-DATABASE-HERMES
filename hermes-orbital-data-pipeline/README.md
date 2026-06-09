@@ -241,6 +241,21 @@ usuário: admin
 senha: admin
 ```
 
+## Desabilitar SpaceX API (opcional)
+
+Se a API da SpaceX estiver indisponível ou você preferir usar sempre os dados de fallback locais (recomendado para apresentações ou testes offline), defina a variável de ambiente `USE_SPACEX_API` no arquivo `.env`:
+
+```text
+USE_SPACEX_API=false
+```
+
+Com `USE_SPACEX_API=false` o script `scripts/extract_spacex.py` não fará chamadas externas e carregará diretamente `data/mock/spacex_launches_fallback.json`. Para habilitar a chamada ao serviço ao vivo, defina `USE_SPACEX_API=true`.
+
+Observações:
+- O operador `extract_spacex_launches` na DAG tem um `execution_timeout` curto e a requisição foi ajustada para timeout de 10s, de modo que falhas na API não travem longamente a execução.
+- Certifique-se de que `data/mock/spacex_launches_fallback.json` exista no repositório/container quando usar o fallback.
+
+
 No Airflow:
 
 1. procurar a DAG `hermes_orbital_pipeline`;

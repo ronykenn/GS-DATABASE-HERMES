@@ -36,7 +36,7 @@ def _fuel_required(risk: float, estimated_mass_kg: float, object_type: str) -> f
     return round((risk / 100) * estimated_mass_kg * multiplier + random.uniform(2, 30), 2)
 
 
-def generate_mock_telemetry(records: int = 120, output_file: Path = OUTPUT_FILE) -> Path:
+def generate_mock_telemetry(records: int = 120, output_file: Path = OUTPUT_FILE) -> str:
     ensure_directories()
     random.seed(2026)
     rows = []
@@ -75,7 +75,7 @@ def generate_mock_telemetry(records: int = 120, output_file: Path = OUTPUT_FILE)
             writer.writerows(rows)
         LOGGER.info("Telemetria mockada salva em %s (%s registros)", target, len(rows))
 
-    return output_file
+    return str(output_file)
 
 
 if __name__ == "__main__":

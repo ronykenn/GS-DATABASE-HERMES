@@ -23,7 +23,7 @@ def _split_queries(sql_text: str) -> list[str]:
     return [query.strip() for query in "\n".join(cleaned_lines).split(";") if query.strip()]
 
 
-def run_sqlite_queries(db_path: Path = PROJECT_ROOT / "hermes_orbital.db") -> Path:
+def run_sqlite_queries(db_path: Path = PROJECT_ROOT / "hermes_orbital.db") -> str:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     queries = _split_queries((SQL_DIR / "04_analytical_queries_sqlite.sql").read_text(encoding="utf-8"))
     with sqlite3.connect(db_path) as connection:
@@ -32,7 +32,7 @@ def run_sqlite_queries(db_path: Path = PROJECT_ROOT / "hermes_orbital.db") -> Pa
             output_file = RESULTS_DIR / f"sqlite_query_{index:02d}.csv"
             df.to_csv(output_file, index=False)
             LOGGER.info("Consulta %s salva em %s", index, output_file)
-    return RESULTS_DIR
+    return str(RESULTS_DIR)
 
 
 def _connect_oracle():
@@ -49,7 +49,7 @@ def _connect_oracle():
     return oracledb.connect(user=user, password=password, dsn=dsn)
 
 
-def run_oracle_queries() -> Path:
+def run_oracle_queries() -> str:
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     queries = _split_queries((SQL_DIR / "03_analytical_queries_oracle.sql").read_text(encoding="utf-8"))
     with _connect_oracle() as connection:
@@ -62,10 +62,10 @@ def run_oracle_queries() -> Path:
                 output_file = RESULTS_DIR / f"oracle_query_{index:02d}.csv"
                 df.to_csv(output_file, index=False)
                 LOGGER.info("Consulta Oracle %s salva em %s", index, output_file)
-    return RESULTS_DIR
+    return str(RESULTS_DIR)
 
 
-def run_analytical_queries() -> Path:
+def run_analytical_queries() -> str:
     target = os.getenv("HERMES_DB_TARGET", "sqlite").lower()
     if target == "oracle":
         return run_oracle_queries()

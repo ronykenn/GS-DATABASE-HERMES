@@ -64,7 +64,11 @@ def _run_schema(cursor) -> None:
             try:
                 cursor.execute(sql)
             except Exception as exc:
-                LOGGER.info("Schema Oracle: instrucao ignorada ou ja existente: %s", exc)
+                if "ORA-00955" in str(exc):
+                    LOGGER.info("Schema Oracle: tabela ou indice ja existente: %s", exc)
+                    continue
+                LOGGER.exception("Schema Oracle: falha ao executar instrucao: %s", sql)
+                raise
 
 
 def _insert_dataframe(cursor, table_name: str, df: pd.DataFrame) -> None:

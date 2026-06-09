@@ -46,7 +46,7 @@ def recommended_action(priority: str, object_type: str | None = None) -> str:
 def transform_spacex_data(
     input_file: Path = RAW_DIR / "spacex_launches.json",
     output_file: Path = PROCESSED_DIR / "spacex_launches.csv",
-) -> Path:
+) -> str:
     ensure_directories()
     _require_file(input_file)
     launches = json.loads(input_file.read_text(encoding="utf-8"))
@@ -79,13 +79,13 @@ def transform_spacex_data(
         df["launch_date_utc"] = df["launch_date_utc"].dt.strftime("%Y-%m-%d %H:%M:%S")
     df.to_csv(output_file, index=False)
     LOGGER.info("SpaceX transformado em %s (%s registros)", output_file, len(df))
-    return output_file
+    return str(output_file)
 
 
 def transform_iss_data(
     input_file: Path = RAW_DIR / "iss_position.json",
     output_file: Path = PROCESSED_DIR / "iss_position.csv",
-) -> Path:
+) -> str:
     ensure_directories()
     _require_file(input_file)
     payload = json.loads(input_file.read_text(encoding="utf-8"))
@@ -110,13 +110,13 @@ def transform_iss_data(
     df["collected_at"] = pd.to_datetime(df["collected_at"], utc=True).dt.strftime("%Y-%m-%d %H:%M:%S")
     df.to_csv(output_file, index=False)
     LOGGER.info("ISS transformado em %s (%s registros)", output_file, len(df))
-    return output_file
+    return str(output_file)
 
 
 def transform_telemetry_data(
     input_file: Path = RAW_DIR / "hermes_orbital_telemetry.csv",
     output_file: Path = PROCESSED_DIR / "orbital_objects.csv",
-) -> Path:
+) -> str:
     ensure_directories()
     if not input_file.exists():
         input_file = MOCK_DIR / "hermes_orbital_telemetry.csv"
@@ -160,13 +160,13 @@ def transform_telemetry_data(
     ]
     df[ordered_columns].to_csv(output_file, index=False)
     LOGGER.info("Telemetria transformada em %s (%s registros)", output_file, len(df))
-    return output_file
+    return str(output_file)
 
 
 def generate_mission_analytics(
     input_file: Path = PROCESSED_DIR / "orbital_objects.csv",
     output_file: Path = PROCESSED_DIR / "mission_analytics.csv",
-) -> Path:
+) -> str:
     _require_file(input_file)
     df = pd.read_csv(input_file)
     generated_at = _ingestion_timestamp()
@@ -186,7 +186,7 @@ def generate_mission_analytics(
     )
     analytics.to_csv(output_file, index=False)
     LOGGER.info("Analytics gerado em %s", output_file)
-    return output_file
+    return str(output_file)
 
 
 if __name__ == "__main__":

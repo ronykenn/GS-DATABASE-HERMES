@@ -13,11 +13,8 @@ LOGGER = configure_logging("load_database")
 def load_to_database() -> str:
     target = os.getenv("HERMES_DB_TARGET", "sqlite").lower()
     if target == "oracle":
-        try:
-            load_oracle()
-            return "oracle"
-        except Exception as exc:
-            LOGGER.warning("Carga Oracle falhou. Usando SQLite como fallback: %s", exc)
+        load_oracle()
+        return "oracle"
     load_sqlite()
     return "sqlite"
 

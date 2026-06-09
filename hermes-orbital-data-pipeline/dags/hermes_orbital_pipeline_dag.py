@@ -45,6 +45,7 @@ with DAG(
     extract_spacex_launches_task = PythonOperator(
         task_id="extract_spacex_launches",
         python_callable=extract_spacex_launches,
+        execution_timeout=timedelta(seconds=30),
     )
     extract_iss_position_task = PythonOperator(
         task_id="extract_iss_position",

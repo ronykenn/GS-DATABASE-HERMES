@@ -14,7 +14,7 @@ OUTPUT_FILE = RAW_DIR / "iss_position.json"
 FALLBACK_FILE = MOCK_DIR / "iss_position_fallback.json"
 
 
-def extract_iss_position(output_file: Path = OUTPUT_FILE) -> Path:
+def extract_iss_position(output_file: Path = OUTPUT_FILE) -> str:
     ensure_directories()
     try:
         LOGGER.info("Consultando Open Notify API: %s", ISS_NOW_URL)
@@ -33,7 +33,7 @@ def extract_iss_position(output_file: Path = OUTPUT_FILE) -> Path:
 
     output_file.write_text(json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8")
     LOGGER.info("Posicao ISS salva em %s (%s)", output_file, source)
-    return output_file
+    return str(output_file)
 
 
 if __name__ == "__main__":
